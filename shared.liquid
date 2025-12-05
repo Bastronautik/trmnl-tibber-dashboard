@@ -1,0 +1,105 @@
+{% assign tibber_icon = '<svg class="w--4 text-stroke text-stroke--large image" viewBox="0 0 225 294" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M143.506 7.79398e-05C138.864 0.027631 134.369 2.05351 131.057 5.86583L4.16222 151.524C-0.212369 156.545 -1.22935 163.434 1.54322 169.533C4.2851 175.602 10.1773 179.399 16.8624 179.399H135.003C139.103 179.399 142.501 176.074 142.501 171.973C142.501 167.873 139.103 164.547 135.003 164.547H16.8624C15.7842 164.547 15.2791 163.905 15.0327 163.381C14.7866 162.857 14.6295 162.048 15.3376 161.246L142.232 15.6063C142.509 15.3289 143.29 14.3876 144.707 15.1581C146.093 15.9286 145.781 17.1025 145.658 17.4722L126.446 82.6952C125.284 86.6448 127.565 90.7971 131.523 91.9334C135.443 93.0603 139.538 90.8053 140.689 86.8927L159.919 21.5799C162.168 13.8166 158.909 5.98587 151.793 2.13498C149.136 0.679351 146.291 -0.0182907 143.506 7.79398e-05ZM89.8706 114.499C85.7702 114.499 82.3726 117.825 82.3726 121.926C82.3726 126.025 85.7702 129.352 89.8706 129.352H208.029C209.107 129.352 209.595 129.994 209.841 130.518C210.087 131.042 210.245 131.851 209.536 132.653L82.6416 278.292C82.3642 278.57 81.5833 279.51 80.1661 278.741C78.7798 277.97 79.0922 276.796 79.2154 276.427L98.4271 211.204C99.5899 207.253 97.3082 203.101 93.3507 201.965C89.4308 200.838 85.3364 203.092 84.1843 207.006L64.9546 272.319C62.7057 280.082 65.9642 287.913 73.0806 291.764C80.1662 295.646 88.5181 294.132 93.8171 288.033L220.711 142.375C225.086 137.354 226.103 130.464 223.33 124.365C220.588 118.296 214.715 114.499 208.029 114.499L89.8706 114.499Z" fill="currentColor"/></svg>' %}
+
+{% assign chart_id = "chart-" | append_random %}
+{% assign cf = trmnl.plugin_settings.custom_fields_values %}
+{% assign location_name = cf.location_name | default: "Home" %}
+{% assign solar_panels = cf.solar_panels | default: "true" %}
+
+
+{% assign title_current_price      = cf.title_current_price      | default: "Current price" %}
+{% assign title_today_consumption  = cf.title_today_consumption  | default: "Consumption" %}
+{% assign title_today_cost         = cf.title_today_cost         | default: "Cost" %}
+{% assign title_today_production   = cf.title_today_production   | default: "Sold (Solar)" %}
+{% assign title_today_reward       = cf.title_today_reward       | default: "Reward" %}
+{% assign title_month_consumption  = cf.title_month_consumption  | default: "Monthly Consumption" %}
+{% assign title_month_cost         = cf.title_month_cost         | default: "Monthly Cost" %}
+
+{% assign firstHome  = data.viewer.homes[0] %}
+{% assign priceInfo  = firstHome.currentSubscription.priceInfo %}
+{% assign currency   = priceInfo.current.currency %}
+
+{% assign today_date    = "now" | date: "%Y-%m-%d" %}
+{% assign current_month = "now" | date: "%Y-%m" %}
+
+{% assign today_consumption  = 0 %}
+{% assign today_cost         = 0 %}
+{% assign today_production   = 0 %}
+{% assign today_reward       = 0 %}
+{% assign month_consumption  = 0 %}
+{% assign month_cost         = 0 %}
+{% assign last_update        = "" %}
+{% assign last_update_formatted = last_update | date: "%d-%m-%Y %H:%M (%z)" %}
+
+{% for node in firstHome.todayConsumption.nodes %}
+  {% assign node_date = node.from | date: "%Y-%m-%d" %}
+  {% if node_date == today_date %}
+    {% assign today_consumption = today_consumption | plus: node.consumption %}
+    {% assign today_cost        = today_cost        | plus: node.cost %}
+  {% endif %}
+{% endfor %}
+
+{% for node in firstHome.todayProduction.nodes %}
+  {% if node.production %}
+    {% assign node_date = node.from | date: "%Y-%m-%d" %}
+    {% if node_date == today_date %}
+      {% assign today_production = today_production | plus: node.production %}
+      {% assign today_reward     = today_reward     | plus: node.profit %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+
+{% if today_production == 0 %}
+  {% assign solar_panels = "false" %}
+{% endif %}
+
+{% if solar_panels == "true" %}
+  {% assign visible_stats = "today_consumption,today_cost,today_production,today_reward,month_consumption,month_cost" | split: "," %}
+{% else %}
+  {% assign visible_stats = "today_consumption,today_cost,month_consumption,month_cost" | split: "," %}
+{% endif %}
+
+{% for node in firstHome.monthConsumption.nodes %}
+  {% assign node_month = node.from | date: "%Y-%m" %}
+  {% if node_month == current_month %}
+    {% assign month_consumption = month_consumption | plus: node.consumption %}
+    {% assign month_cost        = month_cost        | plus: node.cost %}
+  {% endif %}
+{% endfor %}
+
+{% for node in firstHome.todayConsumption.nodes reversed %}
+  {% if node.consumption %}
+    {% assign last_update = node.to %}
+    {% break %}
+  {% endif %}
+{% endfor %}
+
+{% if last_update == "" %}
+  {% for node in firstHome.todayProduction.nodes reversed %}
+    {% if node.production %}
+      {% assign last_update = node.to %}
+      {% break %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{% assign last_update_raw = last_update %}
+
+{% assign year   = last_update_raw | slice: 0, 4 %}
+{% assign month  = last_update_raw | slice: 5, 2 %}
+{% assign day    = last_update_raw | slice: 8, 2 %}
+{% assign hour   = last_update_raw | slice: 11, 2 %}
+{% assign minute = last_update_raw | slice: 14, 2 %}
+{% assign tz     = last_update_raw | slice: 23, 6 %}
+
+{% assign last_update_formatted = day | append: "-" | append: month | append: "-" | append: year | append: " " | append: hour | append: ":" | append: minute | append: " (" | append: tz | append: ")" %}
+{% assign last_update_formatted_short = hour | append: ":" | append: minute | append: " (" | append: tz | append: ")" %}
+
+<style>
+  #app { font-family: 'Host Grotesk', sans-serif; }
+  .bold { font-weight: bold; }
+  .relative { position: relative; }
+  .chartPosition { position: absolute; left: 0; }
+  .chartPosition--center { bottom: 25%; }
+</style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />

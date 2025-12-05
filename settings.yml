@@ -1,0 +1,68 @@
+---
+strategy: polling
+no_screen_padding: 'no'
+dark_mode: 'no'
+static_data: ''
+polling_verb: post
+polling_url: https://api.tibber.com/v1-beta/gql
+polling_headers: authorization={{api_key}}&content-type=application/json
+polling_body: '{"query":"query EnergyDashboard { viewer { homes { id currentSubscription { priceInfo { current { total currency } today { startsAt total } tomorrow { startsAt total } } } todayConsumption: consumption(resolution: HOURLY, last: 48) { nodes { from to consumption cost } } todayProduction: production(resolution: HOURLY, last: 48) { nodes { from to production profit } } monthConsumption: consumption(resolution: DAILY, last: 62) { nodes { from to consumption cost } } } } }"}'
+id: 188591
+custom_fields:
+- name: About this plugin
+  keyname: author_bio
+  field_type: author_bio
+  description: This plugin turns your <a href="https://tibber.com">Tibber</a> data into a clear at-a-glance TRMNL dashboard, showing live prices, daily usage, costs, and optional solar stats (Only shows when there is data and you have enabled it). With the reminder that all data depends on Tibber’s API and may be slightly delayed (+/- 1hr). It supports Tibber in The Netherlands (€) and possible also Germany (€), Sweden (kr) and Norway (kr). Questions or ideas? Email me or reach out on Discord at @Bas/@Bastronautica.
+  email_address: trmnl@achtnegen.nl
+- keyname: api_key
+  field_type: string
+  name: API Key
+  description: This token can be generated at the <a href="https://developer.tibber.com/settings/access-token" class="underline" target="_blank">Tibber Developer Dashboard</a>.
+- keyname: solar_panels
+  field_type: select
+  name: Do you have Solar panels?
+  description: When you select yes, you get 2 extra cards with information about your solar panels (Production & Reward)
+  options:
+  - Yes, I have them: true
+  - No, I don't have them: false
+  conditional_validation:
+  - when: false
+    hidden:
+    - title_today_production
+    - title_today_reward
+- keyname: location_name
+  field_type: string
+  name: Location name
+  default: New York
+- keyname: title_current_price
+  field_type: string
+  name: 'Title: Current price'
+  default: Current Price
+- keyname: title_today_consumption
+  field_type: string
+  name: 'Title: Consumption'
+  default: Consumption
+- keyname: title_today_cost
+  field_type: string
+  name: 'Title: Cost'
+  default: Cost
+- keyname: title_today_production
+  field_type: string
+  name: 'Title: Production (Solar)'
+  default: Production (Solar)
+  optional: true
+- keyname: title_today_reward
+  field_type: string
+  name: 'Title: Sold for (Solar)'
+  default: Sold for
+  optional: true
+- keyname: title_month_consumption
+  field_type: string
+  name: 'Title: Monthly Consumption'
+  default: Monthly Consumption
+- keyname: title_month_cost
+  field_type: string
+  name: 'Title: Monthly Cost'
+  default: Monthly Cost
+name: Tibber Dashboard
+refresh_interval: 15
