@@ -12,7 +12,8 @@ custom_fields:
 - name: About this plugin
   keyname: author_bio
   field_type: author_bio
-  description: This plugin turns your <a href="https://tibber.com">Tibber</a> data into a clear at-a-glance TRMNL dashboard, showing live prices, daily usage, costs, and optional solar stats (Only shows when there is data and you have enabled it). With the reminder that all data depends on Tibber’s API and may be slightly delayed (+/- 1hr). It supports Tibber in The Netherlands (€) and possible also Germany (€), Sweden (kr) and Norway (kr). Questions or ideas? Email me or reach out on Discord at @Bas/@Bastronautica.
+  description: This plugin turns your <a href="https://tibber.com">Tibber</a> data into a clear at-a-glance TRMNL dashboard. Supports NL, DE, SWE and NOR. <br><br>Update 27-12-2025 - Added lowest and highest price of the day.
+  category: analytics
   email_address: trmnl@achtnegen.nl
 - keyname: api_key
   field_type: string

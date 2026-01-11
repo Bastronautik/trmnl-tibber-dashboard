@@ -9,12 +9,35 @@
             <i class="fa-solid fa-money-bill"></i>
           {% endif %}
       </span>
+      <div class="bg--white text--black py--1 px--2 rounded--large time-box bold">{{ current_time }}</div>
       <div class="value--xxxsmall bold text-stroke text-stroke--large text-stroke--black">
         {{ title_current_price }}
       </div>
-      <div class="value value--tnums bold relative text-stroke text-stroke--large text-stroke--black">
-        € {{ priceInfo.current.total | round: 2 }}
-      </div>
+          <div class="flex flex--wrap flex--left flex--row flex--center-y value--small value--tnums bold relative text-stroke text-stroke--large text-stroke--black relative">
+            {{ money_prefix }}
+            {{ priceInfo.current.total | round: 2 }}
+            {{ money_suffix }}
+
+            {% case price_icon %}
+            {% when 'eq' %}
+            <i class="fa-solid value--small fa-ellipsis"></i>
+            {% when 'high' %}
+            <i class="fa-solid value--small fa-arrow-trend-up"></i>
+            {% when 'low' %}
+            <i class="fa-solid value--small fa-arrow-trend-down"></i>
+            {% endcase %}
+
+            <div class="w--full value--xxsmall flex gap">
+              <div>
+                <i class="fa-solid value--xxsmall fa-arrow-up"></i> 
+                {{ price_max | round: 2 }}
+              </div>
+              <div>
+                <i class="fa-solid value--xxsmall fa-arrow-down"></i> 
+                {{ price_min | round: 2 }}
+              </div>
+            </div>
+          </div>
     </div>
   </div>
 
@@ -47,35 +70,23 @@
                   {{ today_consumption | round: 2 }}
                   <small class="label label--small">kWh</small>
                 {% when "title_today_cost" %}
-                  {% if currency == 'EUR' %}
-                    €
-                  {% endif %}
+                  {{ money_prefix }}
                   {{ today_cost | round: 2 }}
-                  {% if currency != 'EUR' %}
-                    <small class="label label--small">kr</small>
-                  {% endif %}
+                  {{ money_suffix }}
                 {% when "title_today_production" %}
                   {{ today_production | round: 2 }}
                   <small class="label label--small">kWh</small>
                 {% when "title_today_reward" %}
-                  {% if currency == 'EUR' %}
-                    €
-                  {% endif %}
+                  {{ money_prefix }}
                   {{ today_reward | round: 2 }}
-                  {% if currency != 'EUR' %}
-                    <small class="label label--small">kr</small>
-                  {% endif %}
+                  {{ money_suffix }}
                 {% when "title_month_consumption" %}
                   {{ month_consumption | round: 2 }} 
                   <small class="label label--small">kWh</small>
                 {% when "title_month_cost" %}
-                  {% if currency == 'EUR' %}
-                    €
-                  {% endif %}
+                  {{ money_prefix }}
                   {{ month_cost | round: 2 }}
-                  {% if currency != 'EUR' %}
-                    <small class="label label--small">kr</small>
-                  {% endif %}
+                  {{ money_suffix }}
               {% endcase %}
             </span></td>
           </tr>

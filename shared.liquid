@@ -16,10 +16,45 @@
 
 {% assign firstHome  = data.viewer.homes[0] %}
 {% assign priceInfo  = firstHome.currentSubscription.priceInfo %}
+{% assign priceInfoToday = priceInfo.today %}
 {% assign currency   = priceInfo.current.currency %}
+{% assign current_price = priceInfo.current.total %}
 
-{% assign today_date    = "now" | date: "%Y-%m-%d" %}
-{% assign current_month = "now" | date: "%Y-%m" %}
+{%- comment -%} --- PRICE ANALYSIS --- {%- endcomment -%}
+{% assign price_min = 999.0 %}
+{% assign price_max = 0.0 %}
+{% assign price_sum = 0.0 %}
+{% assign price_count = 0 %}
+
+{% for entry in priceInfoToday %}
+  {% assign p = entry.total %}
+  {% if p < price_min %}{% assign price_min = p %}{% endif %}
+  {% if p > price_max %}{% assign price_max = p %}{% endif %}
+  {% assign price_sum = price_sum | plus: p %}
+  {% assign price_count = price_count | plus: 1 %}
+{% endfor %}
+
+{% assign price_avg = price_sum | divided_by: price_count %}
+{% assign price_range = price_max | minus: price_min %}
+{% assign range_third = price_range | times: 0.33 %}
+{% assign threshold_low = price_min | plus: range_third %}
+{% assign threshold_high = price_max | minus: range_third %}
+
+{% assign price_icon = "eq" %}
+{% if current_price <= threshold_low %}
+  {% assign price_icon = "low" %}
+{% elsif current_price >= threshold_high %}
+  {% assign price_icon = "high" %}
+{% endif %}
+  
+{% assign now_ts = "now" | date: "%s" %}
+{% assign offset = trmnl.user.utc_offset %}
+{% assign local_ts = now_ts | plus: offset %}
+
+{% assign today_date    = local_ts | date: "%Y-%m-%d" %}
+{% assign current_month = local_ts | date: "%Y-%m" %}
+
+{% assign current_time = local_ts | date: "%H:%M" %}
 
 {% assign today_consumption  = 0 %}
 {% assign today_cost         = 0 %}
@@ -31,55 +66,55 @@
 {% assign last_update_formatted = last_update | date: "%d-%m-%Y %H:%M (%z)" %}
 
 {% for node in firstHome.todayConsumption.nodes %}
-  {% assign node_date = node.from | date: "%Y-%m-%d" %}
-  {% if node_date == today_date %}
-    {% assign today_consumption = today_consumption | plus: node.consumption %}
-    {% assign today_cost        = today_cost        | plus: node.cost %}
-  {% endif %}
+{% assign node_date = node.from | date: "%Y-%m-%d" %}
+{% if node_date == today_date %}
+{% assign today_consumption = today_consumption | plus: node.consumption %}
+{% assign today_cost        = today_cost        | plus: node.cost %}
+{% endif %}
 {% endfor %}
 
 {% for node in firstHome.todayProduction.nodes %}
-  {% if node.production %}
-    {% assign node_date = node.from | date: "%Y-%m-%d" %}
-    {% if node_date == today_date %}
-      {% assign today_production = today_production | plus: node.production %}
-      {% assign today_reward     = today_reward     | plus: node.profit %}
-    {% endif %}
-  {% endif %}
+{% if node.production %}
+{% assign node_date = node.from | date: "%Y-%m-%d" %}
+{% if node_date == today_date %}
+{% assign today_production = today_production | plus: node.production %}
+{% assign today_reward     = today_reward     | plus: node.profit %}
+{% endif %}
+{% endif %}
 {% endfor %}
 
 {% if today_production == 0 %}
-  {% assign solar_panels = "false" %}
+{% assign solar_panels = "false" %}
 {% endif %}
 
 {% if solar_panels == "true" %}
-  {% assign visible_stats = "today_consumption,today_cost,today_production,today_reward,month_consumption,month_cost" | split: "," %}
+{% assign visible_stats = "today_consumption,today_cost,today_production,today_reward,month_consumption,month_cost" | split: "," %}
 {% else %}
-  {% assign visible_stats = "today_consumption,today_cost,month_consumption,month_cost" | split: "," %}
+{% assign visible_stats = "today_consumption,today_cost,month_consumption,month_cost" | split: "," %}
 {% endif %}
 
 {% for node in firstHome.monthConsumption.nodes %}
-  {% assign node_month = node.from | date: "%Y-%m" %}
-  {% if node_month == current_month %}
-    {% assign month_consumption = month_consumption | plus: node.consumption %}
-    {% assign month_cost        = month_cost        | plus: node.cost %}
-  {% endif %}
+{% assign node_month = node.from | date: "%Y-%m" %}
+{% if node_month == current_month %}
+{% assign month_consumption = month_consumption | plus: node.consumption %}
+{% assign month_cost        = month_cost        | plus: node.cost %}
+{% endif %}
 {% endfor %}
 
 {% for node in firstHome.todayConsumption.nodes reversed %}
-  {% if node.consumption %}
-    {% assign last_update = node.to %}
-    {% break %}
-  {% endif %}
+{% if node.consumption %}
+{% assign last_update = node.to %}
+{% break %}
+{% endif %}
 {% endfor %}
 
 {% if last_update == "" %}
-  {% for node in firstHome.todayProduction.nodes reversed %}
-    {% if node.production %}
-      {% assign last_update = node.to %}
-      {% break %}
-    {% endif %}
-  {% endfor %}
+{% for node in firstHome.todayProduction.nodes reversed %}
+{% if node.production %}
+{% assign last_update = node.to %}
+{% break %}
+{% endif %}
+{% endfor %}
 {% endif %}
 
 {% assign last_update_raw = last_update %}
@@ -94,12 +129,17 @@
 {% assign last_update_formatted = day | append: "-" | append: month | append: "-" | append: year | append: " " | append: hour | append: ":" | append: minute | append: " (" | append: tz | append: ")" %}
 {% assign last_update_formatted_short = hour | append: ":" | append: minute | append: " (" | append: tz | append: ")" %}
 
+{% capture money_prefix %}{% if currency == 'EUR' %}€{% endif %}{% endcapture %}
+{% capture money_suffix %}{% unless currency == 'EUR' %}<small class="value value--xxsmall">kr</small>{% endunless %}{% endcapture %}
+
 <style>
   #app { font-family: 'Host Grotesk', sans-serif; }
   .bold { font-weight: bold; }
   .relative { position: relative; }
   .chartPosition { position: absolute; left: 0; }
   .chartPosition--center { bottom: 25%; }
+  .time-box { position: absolute; top: 15px; left: 15px;
+  }
 </style>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
